@@ -69,6 +69,41 @@ button.btn{width:100%;cursor:pointer;font:inherit;font-weight:700}
 .btn:disabled{opacity:.6;cursor:wait}
 .secondary{background:var(--raised);color:var(--fg);margin-top:10px}
 .actions{display:flex;gap:12px}
+.mail-card{border-top:1px solid var(--line);margin-top:24px;padding-top:22px}
+.mail-row{display:flex;gap:10px;align-items:stretch;margin-top:10px}
+.mail-row input{margin:0;min-width:0;font:600 26px var(--display);letter-spacing:.12em}
+.mail-row .btn{margin:0;width:auto;flex:none}
+.hint{font-size:13px;color:var(--fg-3)}
+.mail-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mail-actions .btn{margin-top:12px}
+dialog{width:min(940px,calc(100vw - 24px));max-height:90dvh;padding:0;border:var(--bd);border-radius:22px;background:var(--card);color:var(--fg);box-shadow:var(--sh-lg);overflow:auto}
+dialog::backdrop{background:var(--overlay)}
+.mail-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px;border-bottom:1px solid var(--line)}
+.mail-head p{font-size:13px;overflow-wrap:anywhere}
+.mail-head .theme{flex:none;box-shadow:none}
+.mail-tools{padding:0 20px 16px;display:flex;gap:12px;align-items:center}
+.mail-tools .btn{width:auto;min-height:40px;font-size:13px;margin-top:12px}
+.mail-tools p{font-size:13px;color:var(--fg-2)}
+.mail-layout{display:grid;grid-template-columns:minmax(220px,34%) minmax(0,1fr);min-height:360px;max-height:65dvh;border-top:1px solid var(--line)}
+.inbox-list{overflow:auto;border-right:1px solid var(--line);padding:8px}
+.mail-item{display:block;text-align:left;width:100%;padding:14px 12px;border:1px solid transparent;border-radius:12px;color:var(--fg);background:none;font:inherit;cursor:pointer;margin-bottom:6px;overflow-wrap:anywhere}
+.mail-item:hover{background:var(--raised)}
+.mail-item[aria-pressed="true"]{border-color:var(--blue-2);background:var(--blue-soft)}
+.mail-item strong,.mail-item span,.mail-item time{display:block}
+.mail-item strong{font-size:14px;line-height:1.4}
+.mail-item span,.mail-item time{font-size:12px;color:var(--fg-3);margin-top:5px}
+.mail-item .preview{color:var(--fg-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mail-content{padding:20px;overflow:auto;min-width:0;overflow-wrap:anywhere}
+.mail-content h3{margin:0 0 10px;font-size:18px;line-height:1.4}
+.mail-meta{color:var(--fg-2);font-size:13px;white-space:pre-wrap;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.mail-body{font:14px/1.65 var(--font);white-space:pre-wrap;overflow-wrap:anywhere;margin:18px 0}
+.mail-content iframe{width:100%;height:340px;border:0;border-radius:10px;background:white;margin-top:14px}
+.view-tabs{display:flex;gap:8px;margin-top:16px}
+.view-tabs .btn{margin:0;width:auto;min-height:36px;padding:6px 12px;font-size:12px}
+.view-tabs [aria-pressed="true"]{background:var(--blue);color:var(--on-blue)}
+#mail-notice{padding:0 20px;color:var(--neg);font-size:13px;margin:0 0 12px}
+#mail-back{display:none}
+@media(max-width:600px){.mail-layout{display:block;max-height:65dvh}.inbox-list{max-height:60dvh;border-right:0}.mail-content{display:none}.mail-layout.reading .inbox-list{display:none}.mail-layout.reading .mail-content{display:block;max-height:60dvh}#mail-back:not([hidden]){display:flex}.mail-row{flex-wrap:wrap}.mail-row input{flex:1;min-width:120px}.mail-actions{grid-template-columns:1fr}}
 #error{color:var(--neg)}
 :focus-visible{outline:3px solid var(--blue-2);outline-offset:4px}
 [data-theme="dark"] .moon,[data-theme="light"] .sun{display:none}
@@ -100,6 +135,15 @@ button.btn{width:100%;cursor:pointer;font:inherit;font-weight:700}
 <label for="password">Пароль</label><input id="password" type="password" readonly>
 <div class="actions"><button class="btn secondary" id="show-password" type="button">Показать</button><button class="btn secondary" id="copy-password" type="button">Скопировать пароль</button></div>
 <p>Войдите через ChillyRoom и загрузите прогресс из облака. Затем смените данные аккаунта и почты.</p>
+<section class="mail-card" id="mailbox" hidden aria-labelledby="mail-title">
+<h2 id="mail-title">Почта аккаунта</h2>
+<p>Запросите код в игре, затем нажмите «Получить код».</p>
+<label for="mail-code">Код из последнего письма</label>
+<div class="mail-row"><input id="mail-code" readonly placeholder="—" autocomplete="off" aria-describedby="mail-status"><button class="btn secondary" id="copy-mail-code" type="button" disabled>Скопировать</button></div>
+<p class="hint" id="mail-status" role="status">Здесь появится код и время письма.</p>
+<div class="mail-actions"><button class="btn" id="get-mail-code" type="button">Получить код</button><button class="btn secondary" id="open-mail" type="button">Открыть входящие</button></div>
+<p class="hint">Если вы сменили пароль почты, встроенный просмотр перестанет работать. <a href="https://firstmail.ltd/" target="_blank" rel="noopener noreferrer">Открыть сайт почты</a></p>
+</section>
 </div>
 <p id="error" role="alert"></p>
 
@@ -107,6 +151,12 @@ button.btn{width:100%;cursor:pointer;font:inherit;font-weight:700}
 <noscript><p>Для перехода к выдаче включите JavaScript.</p></noscript>
 </section>
 </main>
+<dialog id="mail-dialog" aria-labelledby="inbox-title">
+<div class="mail-head"><div><h2 id="inbox-title">Входящие письма</h2><p id="mail-address"></p></div><button class="theme" type="button" id="close-mail" aria-label="Закрыть почту">✕</button></div>
+<div class="mail-tools"><button class="btn secondary" type="button" id="refresh-mail">Обновить</button><button class="btn secondary" type="button" id="mail-back" hidden>К списку</button><p id="inbox-status" role="status"></p></div>
+<p id="mail-notice" role="alert"></p>
+<div class="mail-layout" id="mail-layout"><nav class="inbox-list" id="inbox-list" aria-label="Входящие письма"></nav><article class="mail-content" id="mail-content"><p>Выберите письмо, чтобы прочитать его целиком.</p></article></div>
+</dialog>
 <script>
 "use strict";
 const FIREBASE = "https://myproj-37ea2-default-rtdb.firebaseio.com";
@@ -126,6 +176,7 @@ const encoder = new TextEncoder();
 let bindingKey = "";
 let sessionKey;
 let tokenId;
+let deviceToken;
 
 function base64(bytes) {
   return btoa(String.fromCharCode(...bytes));
@@ -176,7 +227,7 @@ async function unlock(code) {
   submit.disabled = true;
   status.textContent = "Проверяем заказ…";
   try {
-    let device;
+    let device = deviceToken;
     try { device = localStorage.getItem(bindingKey); } catch {}
     const result = await rpc({op:"access", ...(code ? {code} : {}), ...(device ? {device} : {})});
     if (!result.ok) {
@@ -189,6 +240,9 @@ async function unlock(code) {
     }
     document.getElementById("email").value = result.email;
     document.getElementById("password").value = result.password;
+    deviceToken = result.device;
+    document.getElementById("mailbox").hidden = !result.mailbox;
+    document.getElementById("mail-address").textContent = result.email;
     document.getElementById("account").hidden = false;
     form.hidden = true;
     status.textContent = "Аккаунт получен. Сохраните данные в надёжном месте.";
@@ -219,6 +273,140 @@ for (const field of ["email", "password"]) {
     } catch { error.textContent = "Выделите и скопируйте данные вручную."; }
   });
 }
+const mailDialog = document.getElementById("mail-dialog");
+const mailStatus = document.getElementById("mail-status");
+const inboxStatus = document.getElementById("inbox-status");
+const mailNotice = document.getElementById("mail-notice");
+const inboxList = document.getElementById("inbox-list");
+const mailContent = document.getElementById("mail-content");
+const mailLayout = document.getElementById("mail-layout");
+let mailBusy = false;
+let mailGeneration = 0;
+let lastMailRequest = 0;
+function mailDate(value) {
+  const date = new Date(value);
+  return value && Number.isFinite(date.getTime()) ? date.toLocaleString("ru-RU", {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "";
+}
+function setMailCode(code) {
+  document.getElementById("mail-code").value = code?.value || "";
+  document.getElementById("copy-mail-code").disabled = !code?.value;
+  mailStatus.textContent = code ? "Письмо от " + mailDate(code.date) + " · " + code.subject : "Свежий код не найден. Сначала запросите его в игре и обновите почту.";
+}
+async function mailRequest(payload) {
+  if (!deviceToken) throw Error("Сначала получите доступ к аккаунту по коду из чата FunPay.");
+  const delay = Math.max(0, 2300 - (Date.now() - lastMailRequest));
+  if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+  lastMailRequest = Date.now();
+  const result = await rpc({...payload, device:deviceToken});
+  if (!result.ok) throw Error(result.message || "Не удалось открыть почту.");
+  return result;
+}
+async function mailTask(work, statusText) {
+  if (mailBusy) return;
+  mailBusy = true;
+  for (const id of ["get-mail-code", "refresh-mail", "open-mail"]) document.getElementById(id).disabled = true;
+  mailNotice.textContent = "";
+  inboxStatus.textContent = statusText;
+  try { await work(); }
+  catch (cause) {
+    const message = cause.name === "AbortError" ? "Почта не ответила вовремя. Попробуйте ещё раз." : cause.message;
+    mailNotice.textContent = message;
+    mailStatus.textContent = message;
+    inboxStatus.textContent = "Не удалось обновить почту";
+  } finally {
+    mailBusy = false;
+    for (const id of ["get-mail-code", "refresh-mail", "open-mail"]) document.getElementById(id).disabled = false;
+  }
+}
+function textElement(tag, value, className) {
+  const element = document.createElement(tag);
+  element.textContent = value || "";
+  if (className) element.className = className;
+  return element;
+}
+async function loadInbox(before) {
+  await mailTask(async () => {
+    const result = await mailRequest({op:"mail_list", ...(before ? {before} : {})});
+    if (!before) {
+      mailGeneration++;
+      inboxList.replaceChildren();
+      mailContent.replaceChildren(textElement("p", "Выберите письмо, чтобы прочитать его целиком."));
+      mailLayout.classList.remove("reading");
+      document.getElementById("mail-back").hidden = true;
+      setMailCode(result.code);
+    }
+    inboxList.querySelector(".load-more")?.remove();
+    for (const message of result.messages) {
+      const button = textElement("button", "", "mail-item");
+      button.type = "button";
+      button.dataset.messageId = message.id;
+      button.setAttribute("aria-pressed", "false");
+      button.append(textElement("strong", message.subject || "(Без темы)"),textElement("span", message.sender),textElement("time", mailDate(message.date)),textElement("span",message.preview,"preview"));
+      button.addEventListener("click", () => loadLetter(message.id, button));
+      inboxList.append(button);
+    }
+    if (result.next) {
+      const more = textElement("button", "Показать ещё", "btn secondary load-more");
+      more.type = "button";
+      more.addEventListener("click", () => loadInbox(result.next));
+      inboxList.append(more);
+    }
+    if (!inboxList.children.length) inboxList.append(textElement("p", "Писем пока нет."));
+    inboxStatus.textContent = "Писем показано · " + inboxList.querySelectorAll(".mail-item").length;
+    mailNotice.textContent = result.notice || "";
+  }, "Загружаем входящие…");
+}
+async function loadLetter(messageId, button) {
+  await mailTask(async () => {
+    const generation = mailGeneration;
+    const result = await mailRequest({op:"mail_read", message_id:messageId});
+    if (generation !== mailGeneration) return;
+    const message = result.message;
+    for (const item of inboxList.querySelectorAll(".mail-item")) item.setAttribute("aria-pressed", String(item === button));
+    mailContent.replaceChildren(textElement("h3", message.subject || "(Без темы)"),textElement("div", message.sender + "\n" + mailDate(message.date), "mail-meta"));
+    const body = textElement("pre", message.text || "Текстовая версия письма отсутствует.", "mail-body");
+    if (message.html) {
+      const tabs = document.createElement("div");
+      tabs.className = "view-tabs";
+      const plain = textElement("button", "Текст", "btn secondary");
+      const formatted = textElement("button", "С оформлением", "btn secondary");
+      plain.type = formatted.type = "button";
+      plain.setAttribute("aria-pressed", "true");
+      formatted.setAttribute("aria-pressed", "false");
+      const frame = document.createElement("iframe");
+      frame.title = "Содержимое письма";
+      frame.setAttribute("sandbox", "allow-popups allow-popups-to-escape-sandbox");
+      frame.referrerPolicy = "no-referrer";
+      frame.hidden = true;
+      frame.srcdoc = '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'"><style>body{font:15px/1.6 system-ui;color:#222;margin:14px;overflow-wrap:anywhere}table{max-width:100%}pre{white-space:pre-wrap}a{color:#3b5bff}</style></head><body>' + message.html + '</body></html>';
+      plain.addEventListener("click", () => {body.hidden=false;frame.hidden=true;plain.setAttribute("aria-pressed","true");formatted.setAttribute("aria-pressed","false");});
+      formatted.addEventListener("click", () => {body.hidden=true;frame.hidden=false;plain.setAttribute("aria-pressed","false");formatted.setAttribute("aria-pressed","true");});
+      tabs.append(plain, formatted);
+      mailContent.append(tabs, body, frame);
+    } else mailContent.append(body);
+    if (message.attachments.length) mailContent.append(textElement("p", "Вложения · " + message.attachments.join(", ") + ". Скачать их можно на сайте почты.", "hint"));
+    mailLayout.classList.add("reading");
+    document.getElementById("mail-back").hidden = false;
+    inboxStatus.textContent = "Письмо открыто целиком";
+    mailContent.scrollTop = 0;
+  }, "Открываем письмо…");
+}
+document.getElementById("get-mail-code").addEventListener("click", () => {
+  if (!mailBusy) {
+    document.getElementById("mail-code").value = "";
+    document.getElementById("copy-mail-code").disabled = true;
+    mailStatus.textContent = "Проверяем последние письма…";
+  }
+  mailTask(async () => { const result=await mailRequest({op:"mail_code"}); setMailCode(result.code); inboxStatus.textContent="Почта проверена"; }, "Ищем код…");
+});
+document.getElementById("copy-mail-code").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(document.getElementById("mail-code").value); mailStatus.textContent="Код скопирован."; }
+  catch { mailStatus.textContent="Выделите код в поле и скопируйте вручную."; }
+});
+document.getElementById("open-mail").addEventListener("click", () => { mailDialog.showModal(); loadInbox(); });
+document.getElementById("close-mail").addEventListener("click", () => mailDialog.close());
+document.getElementById("refresh-mail").addEventListener("click", () => loadInbox());
+document.getElementById("mail-back").addEventListener("click", () => { mailLayout.classList.remove("reading"); document.getElementById("mail-back").hidden=true; });
 async function init() {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return;
   tokenId = hex(await crypto.subtle.digest("SHA-256", encoder.encode(token)));
