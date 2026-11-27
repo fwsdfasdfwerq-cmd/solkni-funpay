@@ -69,7 +69,10 @@ button.btn{width:100%;cursor:pointer;font:inherit;font-weight:700}
 .btn:disabled{opacity:.6;cursor:wait}
 .secondary{background:var(--raised);color:var(--fg);margin-top:10px}
 .actions{display:flex;gap:12px}
-.mail-card{border-top:1px solid var(--line);margin-top:24px;padding-top:22px}
+.mail-card,.next-steps{border-top:1px solid var(--line);margin-top:24px;padding-top:22px}
+.next-steps ol{padding-left:22px;display:grid;gap:8px;color:var(--fg-2)}
+.next-steps summary{cursor:pointer;color:var(--fg);font-weight:600;margin-top:12px}
+.cloud-note{padding:10px 12px;border-radius:10px;background:var(--yellow-soft)}
 .mail-row{display:flex;gap:10px;align-items:stretch;margin-top:10px}
 .mail-row input{margin:0;min-width:0;font:600 26px var(--display);letter-spacing:.12em}
 .mail-row .btn{margin:0;width:auto;flex:none}
@@ -134,7 +137,25 @@ dialog::backdrop{background:var(--overlay)}
 <button class="btn secondary" id="copy-email" type="button">Скопировать почту</button>
 <label for="password">Пароль</label><input id="password" type="password" readonly>
 <div class="actions"><button class="btn secondary" id="show-password" type="button">Показать</button><button class="btn secondary" id="copy-password" type="button">Скопировать пароль</button></div>
-<p>Войдите через ChillyRoom и загрузите прогресс из облака. Затем смените данные аккаунта и почты.</p>
+<section class="next-steps" aria-labelledby="next-steps-title">
+<h2 id="next-steps-title">Как войти и загрузить прогресс</h2>
+<ol>
+<li>Откройте Soul Knight на платформе из заказа: iOS или Android. Если вы уже вошли в другой аккаунт, выйдите из него.</li>
+<li>Выберите <strong>«Войти через ChillyRoom»</strong>. Введите почту и пароль, показанные выше.</li>
+<li>Если игра запросит код из почты, нажмите <strong>«Получить код»</strong> в блоке «Почта аккаунта» ниже. Письмо также можно найти через <strong>«Открыть входящие»</strong>. Это другой код, не из чата FunPay.</li>
+<li>На главном экране нажмите синюю кнопку с облаком. Выберите <strong>«Загрузить прогресс из облака»</strong> и подтвердите загрузку.</li>
+<li>Проверьте прогресс в игре. Если облако пустое или появилась ошибка, проверьте платформу и почту аккаунта, затем напишите в чат заказа на FunPay.</li>
+</ol>
+<p class="cloud-note"><strong>Не нажимайте «Выгрузить прогресс» при первом входе:</strong> эта кнопка может заменить облачное сохранение вашим локальным.</p>
+<details lang="en"><summary>Instructions in English</summary>
+<ol>
+<li>Open Soul Knight on the platform listed in your order (iOS or Android). Sign out if another account is already signed in.</li>
+<li>Choose <strong>Sign in with ChillyRoom</strong> and enter the email address and password shown above.</li>
+<li>If the game asks for an email verification code, use <strong>Получить код (Get code)</strong> or <strong>Открыть входящие (Open inbox)</strong> in the email section below. This is separate from the code you received on FunPay.</li>
+<li>Tap the blue cloud button on the main screen. Choose <strong>Retrieve Progress</strong> and confirm. <strong>Upload Progress</strong> may overwrite the cloud save with your local save.</li>
+<li>Check your progress in the game. If the cloud save is missing or you see an error, check the platform and account email, then contact the seller in your FunPay order chat.</li>
+</ol></details>
+</section>
 <section class="mail-card" id="mailbox" hidden aria-labelledby="mail-title">
 <h2 id="mail-title">Почта аккаунта</h2>
 <p>Запросите код в игре, затем нажмите «Получить код».</p>
