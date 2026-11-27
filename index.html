@@ -62,6 +62,14 @@ p{margin:10px 0 0}
 .steps{margin:20px 0 0;padding:16px 0 0;list-style:none;border-top:1px solid var(--line);display:grid;gap:10px}
 .steps li{display:flex;align-items:center;gap:10px}
 .steps b{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;border:var(--bd);background:var(--raised);color:var(--fg)}
+label{display:block;margin-top:20px;font-weight:600}
+input{width:100%;min-height:50px;margin-top:8px;padding:12px;border:var(--bd);border-radius:12px;background:var(--slot);color:var(--fg);font:inherit}
+#code{letter-spacing:.3em;font-size:24px}
+button.btn{width:100%;cursor:pointer;font:inherit;font-weight:700}
+.btn:disabled{opacity:.6;cursor:wait}
+.secondary{background:var(--raised);color:var(--fg);margin-top:10px}
+.actions{display:flex;gap:12px}
+#error{color:var(--neg)}
 :focus-visible{outline:3px solid var(--blue-2);outline-offset:4px}
 [data-theme="dark"] .moon,[data-theme="light"] .sun{display:none}
 @media(max-width:460px){.hero{gap:12px}.hero-art{width:54px;height:54px;border-radius:13px}.hero-art svg{width:29px;height:29px}}
@@ -80,35 +88,148 @@ p{margin:10px 0 0}
 <section class="card">
 <h2>Как получить данные</h2>
 <p id="status" role="status">Откройте уникальную ссылку, которую вы получили после оплаты на FunPay.</p>
-<a class="btn" id="continue" hidden rel="noreferrer">Перейти к получению <span aria-hidden="true">→</span></a>
+
+<form id="claim-form" hidden>
+<label for="code">Код из чата заказа</label>
+<input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" required placeholder="8 цифр">
+<button class="btn" id="submit" type="submit">Получить аккаунт</button>
+</form>
+<div id="account" hidden>
+<label for="email">Почта</label><input id="email" readonly>
+<button class="btn secondary" id="copy-email" type="button">Скопировать почту</button>
+<label for="password">Пароль</label><input id="password" type="password" readonly>
+<div class="actions"><button class="btn secondary" id="show-password" type="button">Показать</button><button class="btn secondary" id="copy-password" type="button">Скопировать пароль</button></div>
+<p>Войдите через ChillyRoom и загрузите прогресс из облака. Затем смените данные аккаунта и почты.</p>
+</div>
+<p id="error" role="alert"></p>
+
 <ol class="steps"><li><b aria-hidden="true">1</b> Откройте ссылку из автовыдачи.</li><li><b aria-hidden="true">2</b> Введите код из чата заказа на FunPay.</li><li><b aria-hidden="true">3</b> Получите почту и пароль от аккаунта.</li></ol>
 <noscript><p>Для перехода к выдаче включите JavaScript.</p></noscript>
 </section>
 </main>
 <script>
 "use strict";
-// HTTPS-адрес сервера выдачи без пути и завершающего слеша.
-const backend = "";
+const FIREBASE = "https://myproj-37ea2-default-rtdb.firebaseio.com";
+const TRANSPORT = "_claim_rpc_v1";
 const root = document.documentElement;
-try {if (localStorage.getItem("sk_theme") === "light") root.dataset.theme = "light";} catch {}
+try { if (localStorage.getItem("sk_theme") === "light") root.dataset.theme = "light"; } catch {}
 document.getElementById("theme").addEventListener("click", () => {
   root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
-  try {localStorage.setItem("sk_theme", root.dataset.theme);} catch {}
+  try { localStorage.setItem("sk_theme", root.dataset.theme); } catch {}
 });
 const token = location.hash.slice(1);
 const status = document.getElementById("status");
-const next = document.getElementById("continue");
-if (/^[A-Za-z0-9_-]{43}$/.test(token)) {
+const error = document.getElementById("error");
+const form = document.getElementById("claim-form");
+const submit = document.getElementById("submit");
+const encoder = new TextEncoder();
+let bindingKey = "";
+let sessionKey;
+let tokenId;
+
+function base64(bytes) {
+  return btoa(String.fromCharCode(...bytes));
+}
+function bytes(value) {
+  return Uint8Array.from(atob(value), char => char.charCodeAt(0));
+}
+function hex(buffer) {
+  return Array.from(new Uint8Array(buffer), value => value.toString(16).padStart(2, "0")).join("");
+}
+async function rpc(payload) {
+  const rid = hex(crypto.getRandomValues(new Uint8Array(16)));
+  const created = Date.now();
+  const nonce = crypto.getRandomValues(new Uint8Array(12));
+  const additionalData = encoder.encode(rid + ":" + created);
+  const encrypted = await crypto.subtle.encrypt(
+    {name:"AES-GCM", iv:nonce, additionalData}, sessionKey, encoder.encode(JSON.stringify(payload)));
+  const envelope = {v:1, created, nonce:base64(nonce), data:base64(new Uint8Array(encrypted))};
+  const path = FIREBASE + "/" + TRANSPORT;
+  const requestId = tokenId + "_" + rid;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 35000);
   try {
-    const origin = new URL(backend);
-    if (origin.protocol !== "https:" || origin.origin !== backend) throw Error();
-    next.href = new URL("/claim-ios/" + token, origin).href;
-    next.hidden = false;
-    status.textContent = "Перейдите к выдаче. На следующей странице понадобится код из чата заказа.";
-  } catch {
-    status.textContent = "Страница выдачи ещё не подключена. Обратитесь к продавцу в чате заказа на FunPay.";
+    const sent = await fetch(path + "/requests/" + requestId + ".json",
+      {method:"PUT", body:JSON.stringify(envelope), signal:controller.signal, cache:"no-store"});
+    if (!sent.ok) throw Error("Сервис выдачи временно недоступен. Попробуйте позже.");
+    const deadline = Date.now() + 30000;
+    while (Date.now() < deadline) {
+      const response = await fetch(path + "/responses/" + requestId + ".json",
+        {cache:"no-store", signal:controller.signal});
+      if (!response.ok) throw Error("Не удалось проверить результат выдачи.");
+      const result = await response.json();
+      if (result) {
+        if (result.v !== 1 || result.created !== created) throw Error("Не удалось проверить ответ сервера.");
+        const decoded = await crypto.subtle.decrypt(
+          {name:"AES-GCM", iv:bytes(result.nonce), additionalData}, sessionKey, bytes(result.data));
+        return JSON.parse(new TextDecoder().decode(decoded));
+      }
+      await new Promise(resolve => setTimeout(resolve, 700));
+    }
+    throw Error("Сервер ещё не ответил. Повторите попытку через минуту.");
+  } finally {
+    clearTimeout(timer);
   }
 }
+async function unlock(code) {
+  error.textContent = "";
+  submit.disabled = true;
+  status.textContent = "Проверяем заказ…";
+  try {
+    let device;
+    try { device = localStorage.getItem(bindingKey); } catch {}
+    const result = await rpc({op:"access", ...(code ? {code} : {}), ...(device ? {device} : {})});
+    if (!result.ok) {
+      status.textContent = result.message;
+      form.hidden = false;
+      return;
+    }
+    try { localStorage.setItem(bindingKey, result.device); } catch {
+      error.textContent = "Браузер запрещает сохранение доступа. Для повторного открытия понадобится новый код.";
+    }
+    document.getElementById("email").value = result.email;
+    document.getElementById("password").value = result.password;
+    document.getElementById("account").hidden = false;
+    form.hidden = true;
+    status.textContent = "Аккаунт получен. Сохраните данные в надёжном месте.";
+  } catch (cause) {
+    form.hidden = false;
+    status.textContent = "Получение аккаунта";
+    error.textContent = cause.name === "AbortError" ? "Сервер не ответил. Повторите попытку через минуту." : cause.message;
+  } finally {
+    submit.disabled = false;
+  }
+}
+form.addEventListener("submit", event => {
+  event.preventDefault();
+  const code = document.getElementById("code").value.trim();
+  if (/^[0-9]{8}$/.test(code)) unlock(code);
+});
+document.getElementById("show-password").addEventListener("click", event => {
+  const input = document.getElementById("password");
+  input.type = input.type === "password" ? "text" : "password";
+  event.target.textContent = input.type === "password" ? "Показать" : "Скрыть";
+});
+for (const field of ["email", "password"]) {
+  document.getElementById("copy-" + field).addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(field).value);
+      error.textContent = "";
+      status.textContent = "Скопировано.";
+    } catch { error.textContent = "Выделите и скопируйте данные вручную."; }
+  });
+}
+async function init() {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return;
+  tokenId = hex(await crypto.subtle.digest("SHA-256", encoder.encode(token)));
+  const key = await crypto.subtle.digest("SHA-256", encoder.encode("SolKni claim transport v1:" + token));
+  sessionKey = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt", "decrypt"]);
+  bindingKey = "sk_claim_browser_" + tokenId;
+  form.hidden = false;
+  status.textContent = "Введите код, который бот прислал в чат вашего заказа на FunPay.";
+  try { if (localStorage.getItem(bindingKey)) await unlock(); } catch {}
+}
+init().catch(() => { error.textContent = "Откройте страницу в современном браузере с поддержкой HTTPS."; });
 </script>
 </body>
 </html>
